@@ -4,6 +4,7 @@ import { upstream, upstreamPaths, type UpstreamResult } from './nanime.js';
 import {
   clientIp,
   isRateLimited,
+  remaining,
   resetRateLimit,
   retryAfterSeconds,
   RATE_LIMIT,
@@ -62,9 +63,15 @@ app.use('*', async (c, next) => {
   const ip = clientIp(c.req.raw);
   if (isRateLimited(ip)) {
     c.header('Retry-After', String(retryAfterSeconds(ip)));
+    c.header('X-RateLimit-Limit', String(RATE_LIMIT));
+    c.header('X-RateLimit-Remaining', '0');
+    c.header('X-RateLimit-Reset', String(retryAfterSeconds(ip)));
     return errorJson(c, 429, 'rate_limited', `Rate limit ${RATE_LIMIT} request per menit terlampaui.`);
   }
   await next();
+  c.res.headers.set('X-RateLimit-Limit', String(RATE_LIMIT));
+  c.res.headers.set('X-RateLimit-Remaining', String(remaining(ip)));
+  c.res.headers.set('X-RateLimit-Reset', String(retryAfterSeconds(ip)));
 });
 
 const ENDPOINTS = [

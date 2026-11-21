@@ -28,6 +28,13 @@ export function isRateLimited(ip: string, now = Date.now()): boolean {
   return false;
 }
 
+/** Sisa kuota dalam window berjalan (untuk header X-RateLimit-Remaining). */
+export function remaining(ip: string, now = Date.now()): number {
+  const cutoff = now - WINDOW_MS;
+  const list = (hits.get(ip) ?? []).filter((t) => t > cutoff);
+  return Math.max(0, LIMIT - list.length);
+}
+
 /** Sisa detik sampai window bergulir, untuk header Retry-After. */
 export function retryAfterSeconds(ip: string, now = Date.now()): number {
   const list = hits.get(ip) ?? [];
